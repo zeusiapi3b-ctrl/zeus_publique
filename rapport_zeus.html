@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rapport Zeus - version publique</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap">
+<style>
+body{font-family:Georgia,"Times New Roman",serif;line-height:1.6;max-width:960px;margin:0 auto;padding:24px;color:#222;background:#fdfcf8}
+h1,h2,h3,h4{font-family:Helvetica,Arial,sans-serif;color:#3a3a3a}
+img{max-width:100%}
+table{border-collapse:collapse;margin:16px 0;width:100%}
+th,td{border:1px solid #bbb;padding:6px 10px;text-align:left}
+th{background:#eee}
+pre{background:#f0ede4;border:1px solid #d8d2c0;border-radius:6px;padding:12px;overflow-x:auto}
+code{background:#f0ede4;padding:1px 4px;border-radius:4px}
+pre code{background:transparent;padding:0}
+.banniere{background:#fff3cd;border:1px solid #e0c26a;border-radius:6px;padding:10px 16px;font-family:Helvetica,Arial,sans-serif;font-size:0.9em;margin-bottom:24px}
+.mermaid{text-align:center;margin:20px 0}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="banniere">Version publique du rapport du projet Zeus. Toutes les informations sensibles (adresses e-mail, adresses IP internes, mots de passe) ont été caviardées.</div>
+<div id="rapport"></div>
+<script type="text/markdown" id="md-source"><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+
+<div style="border: 4px double #8b6914; border-radius: 8px; padding: 30px 40px; background: linear-gradient(180deg, #f5f0e1 0%, #e8dcc0 50%, #d4c5a0 100%); text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(139, 105, 20, 0.3);">
+  <h1 style="font-family: 'Cinzel', 'Times New Roman', serif; color: #5c4400; margin: 0; font-size: 3.5em; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; text-shadow: 2px 2px 0 #c9b037, 4px 4px 6px rgba(0,0,0,0.2);">Zeus</h1>
+  <div style="width: 60%; height: 2px; background: linear-gradient(90deg, transparent, #8b6914, transparent); margin: 15px auto;"></div>
+  <p style="font-family: 'Cinzel', 'Times New Roman', serif; color: #6b5300; font-size: 1.2em; margin: 0; letter-spacing: 0.08em;">Robot autonome open-source à base de Raspberry Pi</p>
+</div>
+
+Ce document présente une analyse approfondie de la conception et du développement d'un robot autonome, dénommé Zeus, conçu pour naviguer et interagir au sein d'un environnement domestique. Il expose la conception matérielle et logicielle du système, en détaille les fonctionnalités et donne les perspectives d'amélioration envisagées. Les données utiles et codes seront toutes stockées sur Google Drive et sur GitHub de Zeus.
+
+## Introduction
+
+Le développement de ce robot que l'on appelle Zeus est une initiative ambitieuse visant à explorer les potentialités offertes par l'association de technologies open-source et de systèmes d'apprentissage modernes. Conçu comme un robot autonome, Zeus combine des capacités de navigation, d'interaction vocale et visuelle, ainsi qu'une architecture modulaire robuste, pour s'adapter à un environnement domestique complexe.
+
+### Objectifs du projet
+
+Le projet repose sur plusieurs objectifs clés :
+
+- **Navigation autonome** : Développer un robot capable de se déplacer de manière fluide en évitant les obstacles et en s'adaptant aux contraintes de son environnement.
+- **Interaction utilisateur** : Offrir des interactions naturelles grâce à la reconnaissance vocale et visuelle.
+- **Adaptabilité et apprentissage** : Intégrer des mécanismes permettant au robot d'apprendre et de s'améliorer en fonction de ses expériences.
+
+### Méthodologie
+
+Le développement du robot s'est appuyé sur une architecture matérielle "plug and play" et logicielle open source et maintenue, permettant une gestion des capteurs, des moteurs intégrés et donnant la possibilité de mettre en œuvre des algorithmes avancés.
+
+La méthodologie adoptée s'articule autour de cinq axes principaux :
+
+- L'utilisation du Raspberry Pi comme unité de calcul embarquée, avec son système d'exploitation Raspberry Pi OS, largement utilisé, documenté et maintenu, dont les versions récentes sont publiées régulièrement. Cette prise en charge logicielle permet de mobiliser les bibliothèques modernes telles que Vosk pour la reconnaissance vocale et OpenCV pour la vision par ordinateur.
+- Le choix d'une plateforme bénéficiant d'un vaste écosystème d'extensions matérielles, notamment sous la forme de cartes d'extension appelées HAT, a permis d'exploiter cette richesse en retenant le **Grove Base HAT**, carte présentant des connecteurs normalisés qui rendent la partie électronique particulièrement simple, sans soudure, et directement compatible avec les modules du système Grove. Une bibliothèque Python dédiée permet de piloter ces modules, ce qui évite de recourir à des langages tels que C++, Arduino ou Java.
+- L'utilisation du langage de programmation **Python**, simple à prendre en main et largement documenté, permet de piloter l'ensemble du robot, c'est-à-dire le monitoring, les capteurs et les actionneurs, et de développer les algorithmes de navigation.
+- L'utilisation d'une machine distante, Keraunos, qui n'héberge qu'Ollama (conteneur Docker joignable uniquement par SSH) : Ollama fournit toutes les capacités d'IA, conversation de décision, reconnaissance de photos (modèles de vision), transcription vocale (Whisper), aide au SLAM, etc. C'est ce cerveau qui pilote la navigation autonome : à partir des distances ultrasoniques, il choisit une action (avancer, pivoter à gauche ou à droite, corriger la trajectoire, s'arrêter) que le robot applique immédiatement, l'odométrie et le SLAM restant assurés côté embarqué.
+- La fabrication numérique de la structure physique est réalisée par impression 3D. Cette technologie permet de concevoir des pièces sur mesure, adaptées précisément aux besoins du robot. Elle offre une grande liberté de forme pour le châssis, les supports de capteurs et les boîtiers électroniques. Les modèles sont conçus en CAO, puis exportés au format STL avant d'être imprimés en filament plastique. Cette approche itérative facilite les essais successifs : chaque prototype peut être testé, modifié puis réimprimé, afin d'améliorer progressivement la robustesse, l'encombrement et l'intégration des composants du robot.
+
+Une approche progressive et incrémentale, fondée sur la réalisation de tests réguliers à chaque étape du développement, afin de valider individuellement chaque fonctionnalité avant de l'intégrer pleinement au système complet. Il convient toutefois de noter que si chaque fonctionnalité fonctionne de manière isolée, son intégration au sein du système global peut révéler des dysfonctionnements, en raison de conflits logiciels ou matériels entre les différents composants.
+
+Ce rapport est structuré en plusieurs sections afin d'explorer en détail les aspects techniques et fonctionnels du projet :
+
+- La première section présente l'architecture matérielle et logicielle et les protocoles de communication.
+- La deuxième section est consacrée à la gestion des capteurs et des moteurs par l'extension matérielle : le Grove Base HAT.
+- La troisième section est consacrée à la conception mécanique, détaillant la structure physique du robot, qui combine des éléments d'électronique traditionnelle, des pièces imprimées en 3D compatibles LEGO, notamment le châssis et les supports de capteurs, et une boîte en bois découpée au laser.
+- La quatrième section traite d'une analyse du système d'alimentation par batteries.
+- La cinquième section s'intéresse aux fonctionnalités de haut niveau, notamment la navigation autonome et l'interaction utilisateur via des commandes vocales, ainsi que la reconnaissance visuelle pour l'identification d'objets et de visages et l'intégration de la localisation par l'algorithme SLAM.
+- La sixième section décrit le développement d'une application web permettant de visualiser les données des capteurs et des moteurs ainsi que diverses informations, tout en explorant des approches prévues pour une navigation intelligente.
+- Enfin, le rapport se termine par une réflexion sur les perspectives d'amélioration, proposant des pistes pour rendre Zeus encore plus performant et autonome.
+
+Les documents relatifs à ce projet seront stockés sur [adresse e-mail caviardée] et sur le compte GitHub correspondant.
+
+---
+
+## 1. Traitement embarqué : Raspberry Pi 3B+
+
+Zeus adopte une architecture matérielle clé en main, dont la puissance de calcul repose sur le Raspberry Pi 3B+.
+
+*[Image « Raspberry Pi 3B+ » retirée de la version publique (disponible dans le dépôt privé)]*
+
+Ce nano-ordinateur, embarqué au sein de Zeus, dispose d'une puissance de calcul suffisante pour accomplir l'ensemble des tâches embarquées. Ses spécifications principales sont les suivantes : un processeur quadricœur, une mémoire vive de 1 Go, un système d'exploitation Raspberry Pi OS largement documenté et maintenu, ainsi qu'une communauté très étendue garantissant un support abondant. Il est doté de toutes les connectiques (4 prises USB, HDMI, jack audio, Wi-Fi, Bluetooth), ce qui en fait un véritable ordinateur sur lequel il est possible de travailler directement.
+
+Son connecteur GPIO à 40 broches permet de le connecter aux capteurs et actionneurs. Son prix, d'environ 40 euros, en fait une solution particulièrement abordable.
+
+Le Raspberry Pi étant un véritable ordinateur, l'ensemble des algorithmes et des traitements est développé en Python. Ce langage est soutenu par une philosophie privilégiant la lisibilité du code et la simplicité, bénéficie aujourd'hui d'une communauté mondiale particulièrement vaste. Celle-ci produit une documentation abondante, de nombreux tutoriels et des bibliothèques réutilisables, ce qui facilite considérablement le développement et la maintenance du projet.
+
+### Linux
+
+Le Raspberry Pi fonctionne sous un système d'exploitation Linux, en l'occurrence Raspberry Pi OS, une distribution dérivée de Debian spécialement adaptée au matériel du Raspberry Pi. Cette caractéristique constitue un atout majeur, car elle offre la possibilité d'utiliser des bibliothèques et des outils système Linux, qui donnent accès à l'ensemble des fonctionnalités de la machine.
+
+Ainsi, pour l'automatisation, systemd permet de gérer le démarrage automatique des services de Zeus au lancement du système, tandis que cron planifie des tâches récurrentes, comme la vérification périodique de l'état des capteurs. Pour le Bluetooth, la pile BlueZ, pilotée en ligne de commande par bluetoothctl ou en Python par la bibliothèque PyBluez, permet d'appairer et de communiquer avec des périphériques sans fil. Pour le Wi-Fi, wpa_supplicant gère la connexion aux réseaux sécurisés et NetworkManager facilite la configuration et le maintien de la connexion. Pour l'audio, la bibliothèque ALSA permet de capturer le son du microphone et de lire du son vers le haut-parleur, tandis que PulseAudio offre un serveur audio complet et bluez-alsa permet la lecture audio via Bluetooth.
+
+### Python
+
+Par ailleurs, l'ensemble des périphériques du robot est interfacé en Python grâce aux bibliothèques fournies par les constructeurs. On trouve ainsi les capteurs de distance, les capteurs d'orientation, la caméra pour la vidéo, le microphone et le haut-parleur pour l'audio, ainsi que les actionneurs, c'est-à-dire les moteurs et les servomoteurs. Chacun de ces composants dispose de sa bibliothèque Python dédiée, par exemple grove.py pour les modules Grove ou des bibliothèques spécialisées pour la caméra et l'audio. Cette homogénéité logicielle permet de piloter l'intégralité du robot uniquement en Python, sans recourir à d'autres langages, ce qui simplifie considérablement l'architecture du code.
+
+Zeus peut prendre des décisions simples en exécutant des algorithmes embarqués. Toute l'inférence IA est exécutée sur Keraunos, une autre machine du réseau local qui n'héberge qu'Ollama (conversation de décision, reconnaissance de photos, transcription vocale, aide au SLAM), atteinte uniquement par SSH, aucun port web n'étant exposé. Le paquet keraunos/ du dépôt, côté Raspberry Pi, se contente d'envoyer les données à Keraunos par SSH et d'appliquer les décisions reçues.
+
+Nous allons créer un environnement virtuel : zeus_env.
+
+---
+
+## 2. Capteurs, moteurs et actionneurs : Grove Base HAT
+
+Une première piste envisagée pour la gestion des capteurs consistait à utiliser un microcontrôleur tel que l'Arduino. Cette solution a toutefois été écartée au profit d'une architecture offrant une compatibilité directe avec les capteurs de la gamme Grove, évitant ainsi de concevoir de l'électronique ou d'écrire du code en C++. Le module GrovePi+, qui standardise leur connexion et permet un pilotage en Python, sans programmation bas niveau ni microcontrôleur externe, a d'abord été envisagé.
+
+Cependant, une architecture à deux Raspberry Pi a dû être adoptée et développée pour des raisons à la fois matérielles et logicielles. En effet, GrovePi+ imposait Raspbian Buster, sorti en juillet 2019, ses bibliothèques étant devenues obsolètes et incompatibles avec Bullseye, ce qui empêchait un Raspberry Pi unique de gérer simultanément les capteurs et les périphériques avancés que sont le microphone, le haut-parleur et la caméra. Un second Raspberry Pi, baptisé Hercule, était dédié à la gestion des capteurs et des actionneurs via le GrovePi+. Cette contrainte obligeait les deux Raspberry Pi à communiquer en permanence via des protocoles de transfert de données tels que SSH, peu adaptés à un flux continu de données en raison de leur latence et de leur instabilité.
+
+Cette contrainte a disparu avec l'arrivée du Grove Base HAT de nouvelle génération : directement supporté par les versions récentes de Raspberry Pi OS, il offre les mêmes ports standardisés sans limitation de version du système. L'architecture peut donc être simplifiée en un Raspberry Pi unique associé au Grove Base HAT.
+
+Pour la gestion des capteurs et des actionneurs, on utilise le Grove Base HAT, qui est une extension matérielle du Raspberry Pi, permettant de connecter facilement des capteurs et des actionneurs via le système Grove, un écosystème de modules électroniques produits par Seeed Studio. Il simplifie l'utilisation des capteurs en éliminant la nécessité de câbler et souder, grâce à des connecteurs standards. Cette extension sera appelée Hercule.
+
+*[Image « Grove Base HAT » retirée de la version publique (disponible dans le dépôt privé)]*
+
+Le Grove Base HAT dispose de plusieurs ports numériques, analogiques, I2C, PWM et UART, permettant de brancher directement des modules Grove, tels que des capteurs, des moteurs, des servos, des écrans ou des LED. Les ports numériques, PWM et UART sont reliés directement aux broches GPIO du Raspberry Pi, tandis que les ports analogiques sont traités par un convertisseur analogique-numérique ADS1015 12 bits embarqué, lui-même connecté au bus I2C. Le Grove Base HAT se connecte directement sur le connecteur GPIO 40 broches du Raspberry Pi et agit comme une carte d'extension qui élargit considérablement ses capacités d'entrée-sortie. Son fonctionnement est assuré nativement par Raspberry Pi OS récent, aucune version spécifique du système n'étant requise.
+
+*[Image « Ports du Grove Base HAT » retirée de la version publique (disponible dans le dépôt privé)]*
+
+### Schéma de câblage complet du Grove Base HAT
+
+```mermaid
+---
+title: Schéma de câblage Zeus - Grove Base HAT
+---
+flowchart TB
+    subgraph RPI["Raspberry Pi 3B+"]
+        GPIO["GPIO 40 broches"]
+        USB["Ports USB"]
+        CSI["Port CSI"]
+        ALIM["Alimentation 5V"]
+    end
+
+    HAT["Grove Base HAT<br/>(monté sur GPIO 40 broches)"]
+
+    GPIO --> HAT
+
+    subgraph HAT_PORTS["Ports du Grove Base HAT"]
+        D2["D2 (Digital)"]
+        D3["D3 (Digital)"]
+        D4["D4 (Digital)"]
+        D5["D5 (Digital)"]
+        D24["D24 (Digital)"]
+        I2C["I2C (Bus 1)"]
+        PWM["PWM (BCM 12)"]
+        ANA["A0-A6 (Analogique via ADS1015)"]
+    end
+
+    HAT --> D2 & D3 & D4 & D5 & D24 & I2C & PWM & ANA
+
+    subgraph CAPTEURS["Capteurs ultrasoniques Grove"]
+        USS_BACK["Ultrasonic Ranger<br/>BACK (arrière)<br/>Port TCP 6001"]
+        USS_LEFT["Ultrasonic Ranger<br/>LEFT (gauche)<br/>Port TCP 6003"]
+        USS_FRONT["Ultrasonic Ranger<br/>FRONT (avant)<br/>Port TCP 6000"]
+        USS_RIGHT["Ultrasonic Ranger<br/>RIGHT (droite)<br/>Port TCP 6002"]
+        USS_SCAN["Ultrasonic Ranger<br/>SCAN (sur servo)<br/>Port TCP 6004"]
+    end
+
+    D2 --> USS_BACK
+    D3 --> USS_LEFT
+    D4 --> USS_FRONT
+    D5 --> USS_RIGHT
+    D24 --> USS_SCAN
+
+    subgraph MOTEURS["Motorisation"]
+        DRIVER["Driver TB6612FNG<br/>Adresse I2C 0x14<br/>Bus 1"]
+        MOTOR_G["Moteur CC gauche<br/>PWM A / AIN1 / AIN2"]
+        MOTOR_D["Moteur CC droit<br/>PWM B / BIN1 / BIN2"]
+        ROUE_G["Roue gauche"]
+        ROUE_D["Roue droite"]
+    end
+
+    I2C --> DRIVER
+    DRIVER --> MOTOR_G & MOTOR_D
+    MOTOR_G --> ROUE_G
+    MOTOR_D --> ROUE_D
+
+    subgraph SERVO["Bras orientable (Scan SLAM)"]
+        SERVO["Servo moteur<br/>PWM 50 Hz<br/>0-180 degrés"]
+    end
+
+    PWM --> SERVO
+    SERVO -.-> USS_SCAN
+
+    subgraph PERIPH["Périphériques directs Raspberry Pi"]
+        MICRO["Microphone USB<br/>(reconnaissance vocale Vosk)"]
+        PICAM["PiCam<br/>(vision OpenCV/YOLO)"]
+        BATTERIE["Batterie LiPo 3800 mAh<br/>5V / 1.8A (SunFounder)"]
+        HPS["Haut-parleur<br/>(synthèse vocale)"]
+    end
+
+    USB --> MICRO
+    USB --> HPS
+    CSI --> PICAM
+    ALIM --> BATTERIE
+
+    subgraph RESEAU["Communication"]
+        SSH["SSH vers Keraunos<br/>[IP interne caviardée]<br/>(décisions IA Ollama)"]
+        WEB["Serveur web Dash<br/>Port 8080<br/>(dashboard capteurs)"]
+        STREAM["Flux vidéo MJPEG<br/>Port 8000"]
+    end
+
+    RPI --> SSH & WEB & STREAM
+
+    style HAT fill:#f9d5a7,stroke:#d4a24e,stroke-width:3px
+    style RPI fill:#c5e0b4,stroke:#6aa84f,stroke-width:2px
+    style CAPTEURS fill:#d0e0f0,stroke:#4a86c8,stroke-width:2px
+    style MOTEURS fill:#f4cccc,stroke:#cc4125,stroke-width:2px
+    style SERVO fill:#fff2cc,stroke:#e69138,stroke-width:2px
+    style PERIPH fill:#d9d2e9,stroke:#674ea7,stroke-width:2px
+    style RESEAU fill:#e2e2e2,stroke:#666666,stroke-width:2px
+```
+
+La bibliothèque Python officielle du Grove Base HAT est grove.py, maintenue par Seeed Studio : https://github.com/Seeed-Studio/grove.py
+
+Elle s'installe par clonage du dépôt sur le Raspberry Pi, puis expose à la fois des commandes en ligne, par exemple `grove_ultrasonic_ranger 5 6`, et des classes Python, notamment la classe ADC pour lire les ports analogiques A0 à A6.
+
+### 2.1 Détection d'obstacles : capteurs ultrasoniques Grove
+
+Zeus est équipé de quatre capteurs ultrasoniques placés à l'avant, l'arrière, à gauche et à droite du robot. Ils sont chargés de percevoir l'environnement proche du robot.
+
+*[Image « Capteur ultrasonique Grove » retirée de la version publique (disponible dans le dépôt privé)]*
+
+L'Ultrasonic Ranger est un module de mesure de distance sans contact qui fonctionne à 40 kHz. Lorsqu'on fournit un signal de déclenchement d'impulsion avec plus de 10 µs via la broche de signal, le Grove Ultrasonic Ranger émet 8 cycles de niveau de 40 kHz et détecte l'écho. La largeur d'impulsion du signal d'écho est proportionnelle à la distance mesurée. Formule : Distance = temps de pointe du signal d'écho × Vitesse du son (340 m/s) / 2. Le signal de déclenchement et d'écho partagent 1 broche.
+
+| Paramètre | Valeur/Plage |
+|-----------|-------------|
+| Tension de fonctionnement | 3.2~5.2V |
+| Courant de fonctionnement | 8mA |
+| Fréquence ultrasonique | 40kHz |
+| Plage de mesure | 2-350cm |
+| Résolution | 1cm |
+| Sortie | PWM |
+| Dimensions | 50mm × 25mm × 16mm |
+| Poids | 13g |
+| Angle de mesure | 15 degrés |
+| Température de fonctionnement | -10~60 degrés C |
+
+Les capteurs Grove Ultrasonic mesurent les distances aux obstacles environnants en utilisant le principe de l'écholocation basé sur les ondes sonores. Ils émettent une impulsion sonore sous forme d'onde ultrasonique à une fréquence élevée, généralement inaudible pour l'oreille humaine. Cette onde se propage dans l'air jusqu'à ce qu'elle rencontre un obstacle, où elle est réfléchie sous forme d'écho. Le capteur mesure alors le temps écoulé entre l'émission de l'onde et la réception de l'écho. Connaissant la vitesse de propagation du son dans l'air (environ 343 m/s à 20°C), le microcontrôleur intégré au capteur calcule la distance. La division par 2 est nécessaire car le temps mesuré correspond à un aller-retour de l'onde.
+
+Ils permettent à Zeus de détecter les objets autour de lui, d'éviter les collisions et de naviguer en toute sécurité.
+
+Configuration des ports digitaux du Grove Base HAT et ports web associés :
+
+| Capteur | Port digital (Grove) | Port web |
+|---------|---------------------|----------|
+| front_range | 4 | 6000 |
+| back_range | 2 | 6001 |
+| left_range | 3 | 6003 |
+| right_range | 5 | 6002 |
+
+En lançant la commande Python de l'environnement général : `python3 ultrasonic.py D5`. On peut instancier plusieurs capteurs avec des broches différentes (D5, D16, D18, D22) pour les quatre capteurs.
+
+Chaque mesure est associée à un horodatage précis avant copie dans le fichier de données au format JSON : `/home/pi/zeus/ultrasonic.json`, sous la forme :
+
+```json
+{"timestamp": 1771536072.27332, "sensors": {"left": 493, "right": 8, "front": 502, "back": 78}}
+```
+
+Ce fichier est ensuite synchronisé avec le répertoire de Zeus : `/home/zeus/share_files/hercule/ultrasonic_state.json`.
+
+### 2.2 Motorisation : moteurs CC et driver TB6612FNG
+
+Zeus est doté de deux moteurs à courant continu (CC) pilotés par une carte de pilotage TB6612FNG, connectée au Grove Base HAT.
+
+*[Image « Roue et pneu » retirée de la version publique (disponible dans le dépôt privé)]*
+
+*[Image « Moteur CC » retirée de la version publique (disponible dans le dépôt privé)]*
+
+Cette carte est spécialement conçue pour gérer des moteurs de manière efficace, offrant un contrôle précis de la vitesse et de la direction grâce à ses canaux dédiés pour les signaux de commande et les sorties motorisées. Les commandes de mouvement sont générées par Zeus, qui calcule les trajectoires et stratégies de navigation en fonction des données des capteurs.
+
+*[Image « Carte de pilotage moteur » retirée de la version publique (disponible dans le dépôt privé)]*
+
+*[Image « Carte pilote 2 » retirée de la version publique (disponible dans le dépôt privé)]*
+
+La carte TB6612FNG permet de réguler indépendamment chaque moteur pour garantir une manœuvrabilité optimale, de fournir une puissance stable grâce à sa capacité de pilotage jusqu'à 1,2 A par canal, et de réduire les pertes énergétiques et la surchauffe grâce à sa conception intégrée.
+
+La calibration de la distance parcourue par un robot peut être réalisée en fixant un paramètre de consigne moteur, comme une valeur PWM constante, et en utilisant un capteur ultrasonique pour mesurer le déplacement. Le robot est initialement positionné face à un obstacle fixe, tel qu'un mur, et la distance est mesurée à l'aide du capteur ultrasonique. Ensuite, le robot avance avec la consigne moteur définie sur une durée donnée. Une nouvelle mesure de distance est effectuée après l'arrêt du robot. La différence entre la distance initiale et finale permet de calculer la distance parcourue pour cette consigne fixée.
+
+Ces données de déplacement peuvent ensuite être combinées avec la direction du mouvement, obtenue à partir de capteurs supplémentaires tels que des gyroscopes ou des boussoles numériques, pour estimer la position actuelle du robot dans l'espace. Cette méthode, appelée odométrie, permet de construire une carte de l'environnement en intégrant les distances parcourues et les orientations successives. Lorsque l'odométrie est combinée avec des données provenant de capteurs ultrasoniques, le robot peut non seulement tracer sa propre trajectoire, mais également détecter et localiser les obstacles rencontrés.
+
+Installation du driver moteur TB6612FNG :
+
+```bash
+# 1. Se placer dans le dossier du projet
+cd ~/hercule/Motors
+
+# 2. Créer un environnement virtuel avec Python 3.5
+python3.5 -m venv env35
+
+# 3. Activer l'environnement
+source env35/bin/activate
+
+# 4. Installer les dépendances matérielles dans le venv
+pip install RPi.GPIO
+pip install smbus2
+
+# 5. Aller dans le dossier du driver moteur
+cd raspberry-i2c-tb6612fng
+
+# 6. Installer le driver moteur avec Python
+python setup.py install
+
+# 7. Lancer le script
+python motors_share_file.py
+
+# 8. Quitter l'environnement
+deactivate
+```
+
+Hercule lit dans `/home/pi/hercule/share_files/zeus/motors_states.json`.
+
+### 2.3 Accéléromètre
+
+### 2.4 Température
+
+### 2.5 Luminosité
+
+### 2.6 Gyroscope
+
+---
+
+## 3. Gestion des déplacements
+
+Le Raspberry Pi est le centre névralgique du robot. Il est responsable du traitement des données, de la prise de décision, des interactions utilisateur et de l'exécution des algorithmes de haut niveau.
+
+### 3.1 Déplacement
+
+Zeus, le Raspberry Pi dédié à la prise de décision, reçoit en temps réel les données collectées par Hercule via une connexion sécurisée utilisant le protocole SSH. Les distances mesurées par les capteurs ultrasoniques détectent les obstacles à l'avant, à l'arrière, à gauche et à droite du robot.
+
+#### 3.1.1 Mode exploration
+
+Dans un premier temps, un programme simple et "naïf" est utilisé pour gérer les déplacements d'Zeus. La stratégie du robot est une exploration réactive basée sur des priorités. Il n'a pas de carte, mais il réagit instantanément à son environnement pour ne jamais rester bloqué (`/home/zeus/random_walk.py`).
+
+Ordre de priorité :
+
+1. **Priorité maximale : éviter l'impact frontal.** Si un obstacle est détecté à moins de 25 cm devant lui, il effectue un pivot aléatoire (tourne à gauche ou à droite sur lui-même).
+2. **Priorité moyenne : correction de trajectoire (murs latéraux).** Si le robot s'approche trop d'un mur sur les côtés (moins de 15 cm), il effectue un virage doux (nudge) en ralentissant le moteur du côté concerné.
+3. **État par défaut : exploration "organique".** Si la voie est libre (front > 25 cm et côtés > 15 cm), il avance avec du bruit aléatoire (variation de vitesse entre les deux roues) pour éviter les lignes droites parfaites.
+
+#### 3.1.2 Mode couverture de zone (boustrophedon)
+
+Afin de cartographier complètement une pièce de manière systématique, un second mode de navigation a été ajouté : la couverture de zone par algorithme boustrophedon (motif en « lignes de tondeuse »), implémenté dans `navigation/boustrophedon.py` et activé par l'option `--coverage` de `main.py` (`python3 main.py --coverage`).
+
+La zone à couvrir est un rectangle de largeur `width_m` et de hauteur `height_m` (section `coverage:` de `parameters.yaml`), parcouru par des passes parallèles espacées de `lane_spacing_m` (0,5 m par défaut), en alternant le sens de parcours à chaque extrémité pour minimiser les virages. Le chemin est une liste de waypoints (x, y) exprimés en mètres dans le repère monde dont l'origine est la pose de départ du robot.
+
+Le contrôleur `BoustrophedonNavigator` empile trois couches de décision, par ordre de priorité :
+
+1. **Sécurité** : si un obstacle est détecté devant à moins de `safety_front_cm` (25 cm), Zeus s'arrête et pivote sur place.
+2. **Atteinte du waypoint** : lorsque la distance au waypoint courant devient inférieure à `waypoint_tolerance_m` (0,15 m), le waypoint suivant est sélectionné.
+3. **Suivi de trajectoire** : l'erreur de cap entre la direction du waypoint et le cap estimé par odométrie est calculée ; au-delà de `turn_threshold_deg` (25 degrés), Zeus pivote sur place ; sinon il avance en corrigeant sa trajectoire par un différentiel de vitesse des roues proportionnel à l'erreur (`heading_gain`).
+
+Les actions retournées sont compatibles avec l'odométrie (`slam/pose.py`), de sorte que la pose estimée continue d'être intégrée pendant la couverture. Lorsque tous les waypoints sont atteints, le robot s'arrête : la pièce est alors entièrement couverte.
+
+#### 3.1.3 Détection sémantique d'obstacles (YOLOv8 nano)
+
+En complément des capteurs ultrasoniques et de la reconnaissance faciale, Zeus intègre une détection d'obstacles sémantiques par vision : un modèle YOLOv8 en version nano, la variante la plus légère de la famille YOLOv8, compatible avec le Raspberry Pi 3B+. L'inférence est exécutée localement, sur le flux de la PiCam, par `vision/semantic_obstacles.py`, dans un thread d'arrière-plan.
+
+Les classes surveillées sont configurables (section `obstacles:` de `parameters.yaml`) : par défaut `person`, `chair` et `door` (personne, chaise, porte). Le modèle COCO `yolov8n.pt` reconnaît `person` et `chair` mais pas `door` ; pour détecter également les portes, le modèle Open Images V7 `yolov8n-oiv7.pt` (également en version nano) est utilisé par défaut, car il contient la classe `Door`. Un modèle affiné sur mesure peut remplacer l'un ou l'autre. Pour de meilleures performances sur le Pi 3B+, le modèle peut être exporté une fois au format NCNN (`yolo export model=yolov8n-oiv7.pt format=ncnn`), plus rapide que PyTorch sur ce processeur.
+
+Le détecteur (`SemanticObstacleDetector`) capture les images via Picamera2 (avec repli sur le flux MJPEG `stream_url`), exécute l'inférence à résolution réduite (`imgsz: 320`) une image sur `frame_skip`, et conserve les dernières détections de manière thread-safe. Une détection compte comme obstacle gênant lorsqu'elle se trouve dans la bande centrale de l'image (`center_zone`, 50 % de la largeur par défaut, c'est-à-dire « droit devant ») et qu'elle est proche : sa boîte occupe au moins `min_area_frac` de l'image, ou bien le sonar frontal confirme un obstacle à moins de `confirm_sonar_cm`.
+
+La couche de sécurité `navigation/semantic_safety.py` (`SemanticSafety`) s'empile au-dessus de n'importe quel mode de conduite (exploration 3.1.1, couverture 3.1.2, cerveau Keraunos) avec la priorité maximale : si un obstacle sémantique bloque la voie, Zeus s'arrête puis pivote du côté le plus dégagé, déterminé en comparant la surface totale des obstacles détectés à gauche et à droite de l'image, sans appeler l'algorithme de navigation sous-jacent. En mode `--simulate`, aucune caméra n'est ouverte et la couche reste inactive. Sans matériel, la logique est vérifiée par les tests unitaires `python3 vision/test_semantic_obstacles.py`.
+
+#### 3.1.4 Pilotage vocal des déplacements (Vosk)
+
+Un troisième mode de conduite, manuel cette fois, est implémenté dans `audio/voice_commands.py` et activé par l'option `--voice` de `main.py` (`python3 main.py --voice`), ou en script autonome (`python3 -m audio.voice_commands`). Le microphone USB est écouté en continu par Vosk, hors ligne, avec un reconnaisseur restreint à une petite grammaire d'ordres de déplacement en français : la restriction de la grammaire (argument `grammar` du `KaldiRecognizer`) améliore nettement la précision du petit modèle français (`vosk-model-small-fr-0.22`, 16 kHz) sur ces ordres simples.
+
+Les ordres reconnus et leur exécution sur les moteurs :
+
+| Ordre vocal | Action |
+|-------------|--------|
+| « avance », « en avant », « tout droit » | marche avant pendant `drive_duration_s` |
+| « recule », « en arrière » | marche arrière pendant `drive_duration_s` |
+| « gauche », « tourne à gauche » | pivot d'environ 90 degrés à gauche (`turn_quarter_s`) |
+| « droite », « tourne à droite » | pivot d'environ 90 degrés à droite (`turn_quarter_s`) |
+| « demi-tour » | pivot de 180 degrés (2 x `turn_quarter_s`) |
+| « stop », « arrête-toi » | arrêt immédiat |
+
+La sécurité est assurée par le sonar frontal : l'ordre « avance » est refusé (arrêt immédiat, annonce « Obstacle devant, je m'arrête ») lorsque `front_range` mesure moins de `voice_commands.safety_front_cm` (30 cm par défaut), ce qui évite de foncer dans un obstacle même si l'ordre est donné. Chaque ordre exécuté peut être confirmé à voix haute par synthèse vocale gTTS (`voice_commands.confirm`, ex. « J'avance »). Les actions produites (« drive », « backward », « pivot », « stop ») sont des dictionnaires compatibles avec l'odométrie (`slam/pose.py`), donc la pose estimée reste correcte en mode vocal. Les phrases reconnues, les durées, la vitesse, le seuil de sécurité et les phrases de confirmation sont configurables dans la section `voice_commands:` de `parameters.yaml`. Sans matériel, la logique (analyse du texte reconnu, exécution, sécurité, annonces) est vérifiée par les tests unitaires `tests/test_voice_commands.py` (reconnaisseur et moteurs simulés).
+
+---
+
+## 4. Picam et micro
+
+### 4.1 Reconnaissance vocale : microphone USB et Vosk
+
+Afin de doter Zeus de la possibilité d'écouter son équipe, Zeus utilise un dongle USB microphone, puis éventuellement un microphone Bluetooth (casque, puis téléphone).
+
+*[Image « Microphone USB » retirée de la version publique (disponible dans le dépôt privé)]*
+
+On utilise la bibliothèque Vosk pour doter Zeus de capacités de reconnaissance vocale en local. Vosk est une solution légère et puissante, idéale pour les environnements embarqués, car elle fonctionne sans dépendance à une connexion Internet. Cela garantit une rapidité d'exécution et une fiabilité accrue, même dans des environnements où l'accès au réseau peut être limité.
+
+Grâce à cette intégration, Zeus peut interpréter des commandes vocales même en mode déconnecté :
+
+- "Avance" ou "Recule" pour le mouvement.
+- "Tourne à gauche / Tourne à droite" : commandes simples pour ajuster la direction.
+- "Avance de 2 mètres" : le robot utilise ses capteurs pour parcourir la distance spécifiée.
+- "Stop" : interrompt immédiatement le mouvement.
+
+Les commandes vocales ont une priorité supérieure par rapport aux différents algorithmes. Lorsqu'un utilisateur parle, le microphone capture l'entrée audio, traitée en temps réel par Vosk. La bibliothèque transcrit le contenu vocal en texte, analysé pour identifier les commandes pertinentes. Par exemple, lorsque la commande "stop" est prononcée, le contenu vocal est transcrit dans le fichier `vocal.txt`, analysé et retranscrit en ordre ("moteur_gauche, 0" et "moteur_droit, 0"), stocké dans la base de données Redis et envoyé à Hercule en SSH pour être exécuté. Depuis l'intégration du pilotage vocal embarqué (voir 3.1.4), les ordres simples de déplacement sont reconnus directement sur le Pi par `audio/voice_commands.py` (grammaire Vosk restreinte) et exécutés localement sur les moteurs, sans passer par Keraunos.
+
+### 4.2 Vidéo : PiCam et Picamera2
+
+Sur Zeus, on utilise la PiCam (Raspberry Pi Camera Module), une caméra spécialement conçue pour être utilisée avec les cartes Raspberry Pi. Elle se connecte directement à la carte via un connecteur CSI (Camera Serial Interface), offrant ainsi une intégration optimale pour des projets embarqués nécessitant de la capture d'images ou de vidéos.
+
+*[Image « PiCam Camera Module » retirée de la version publique (disponible dans le dépôt privé)]*
+
+Caractéristiques principales :
+
+- **Résolutions disponibles** : de 5 MP (modèles anciens) à 12 MP ou plus (modèles récents comme la Pi Camera Module 3).
+- **Capteur** : les modèles récents utilisent des capteurs Sony IMX offrant une bonne sensibilité à la lumière et une qualité d'image améliorée.
+- **Modes de capture** : photo (JPEG, PNG), vidéo (H.264, MJPEG), mode timelapse.
+- **Compatibilité** : fonctionne avec Raspberry Pi OS via la bibliothèque libcamera.
+
+Pour utiliser la PiCam, on utilise la bibliothèque Python Picamera2, développée par la Fondation Raspberry Pi pour contrôler les caméras compatibles avec les Raspberry Pi. Elle remplace la bibliothèque Picamera classique par une solution moderne basée sur libcamera.
+
+Principales fonctionnalités de Picamera2 : capture d'images en haute résolution, vidéo en temps réel avec des pipelines de traitement personnalisables, capture simultanée de plusieurs flux avec différentes résolutions et formats, support de fonctionnalités avancées comme les flux multiples et la capture en RAW.
+
+Installation : `sudo apt update && sudo apt install -y python3-picamera2`
+
+Une fois la vidéo captée, elle est streamée sur le port 8000.
+
+### 4.3 Synthèse vocale : haut-parleur
+
+Pour permettre au robot de s'exprimer (ce qu'il fait, le nom des choses ou des personnes qu'il connaît, ou répondre à des questions plus complexes), Zeus utilise les informations contextuelles pour déclencher des phrases prédéfinies, comme avertir qu'un obstacle est proche ("Attention, obstacle détecté à gauche !"). Zeus annonce vocalement : "Obstacle détecté à l'avant. Je tourne à droite." ou dit bonjour puis le nom de la personne reconnue.
+
+---
+
+## 5. Alimentation : batteries lithium
+
+Pour garantir l'autonomie de Zeus, chaque Raspberry Pi est alimenté par une batterie dédiée. Les batteries choisies sont des Raspberry Pi Lithium Battery Power Pack (SunFounder), d'une capacité de 3800 mAh, délivrant une tension de 5V/1.8A, parfaitement adaptée aux besoins énergétiques des Raspberry Pi.
+
+*[Image « Batterie lithium » retirée de la version publique (disponible dans le dépôt privé)]*
+
+Les moteurs sont alimentés séparément par un bloc dédié. Cette séparation garantit que l'alimentation des capteurs et du Raspberry Pi reste stable, même lorsque les moteurs, qui consomment plus d'énergie, sont activés. Les batteries sont rechargeables via un port micro-USB standard. Un temps de charge complet est généralement compris entre 3 et 4 heures. Il est également envisagé d'intégrer une station de recharge autonome.
+
+---
+
+## 6. Cerveau Keraunos : Ollama uniquement (Docker, SSH)
+
+Keraunos n'héberge qu'Ollama, qui peut tout faire : conversation de décision, reconnaissance de photos (modèles de vision), transcription vocale (modèles Whisper), aide au SLAM, etc. Toute l'inférence IA est donc servie par Ollama sur Keraunos. Le paquet keraunos/ du dépôt, côté Raspberry Pi, se contente d'envoyer les données à Keraunos par SSH et d'appliquer les actions reçues ; les capteurs, les moteurs, l'odométrie, le SLAM et le random walk de repli restent embarqués sur le Pi.
+
+Exemple de scénario (apprentissage des lieux) : sur commande vocale, Zeus transcrit le nom de la pièce (modèle Whisper sur Keraunos), prend une photo avec la PiCam, la copie sur Keraunos par scp, puis demande à un modèle de vision, toujours en SSH, de la décrire ; la photo étiquetée est conservée sur Keraunos (par exemple dans rooms/<nom>/) afin que des photos ultérieures puissent être comparées par le même modèle de vision (ou par embeddings) pour reconnaître la pièce. Précision importante : chaque appel ollama run est sans état, « apprendre » signifie donc persister les données étiquetées sur Keraunos, et non modifier les poids du modèle.
+
+Autre exemple (itinéraire) : une fois la carte SLAM construite (grille d'occupation) et les pièces nommées, Zeus exporte la grille (slam.mapper), la copie sur Keraunos par scp, et demande à Ollama, toujours en SSH, le meilleur itinéraire entre deux pièces nommées en tenant compte des obstacles ; Ollama répond par une séquence de points de passage ou d'actions que Zeus exécute ensuite. La grille étant petite (80 x 80 cellules), elle peut être transmise en texte brut par SSH.
+
+Ollama s'exécute dans un conteneur Docker sur une autre machine du réseau local. Aucun port web n'est exposé : Zeus atteint le LLM uniquement par SSH, en exécutant à distance la commande docker exec -i <conteneur> ollama run <modèle> ; le prompt (consigne système + distances ultrasoniques courantes) est envoyé sur l'entrée standard de la commande distante et la réponse est lue sur la sortie standard. L'authentification SSH repose sur une clé préalablement déposée depuis le Raspberry Pi (ssh-copy-id <user>@<host>).
+
+À chaque boucle de conduite, main.py transmet à Keraunos les distances courantes (avant, arrière, gauche, droite, scan) ; le LLM répond par exactement une action parmi FORWARD, PIVOT LEFT, PIVOT RIGHT, NUDGE LEFT, NUDGE RIGHT, STOP. L'action est appliquée aux moteurs puis retournée dans le même format que le random walk, de sorte que l'odométrie (slam/pose.py) et le SLAM restent inchangés. Si SSH ou le LLM échoue, le random walk réactif (navigation/) reprend automatiquement la main.
+
+La configuration se fait dans parameters.yaml (section keraunos/ : enabled, ssh_host, ssh_user, ssh_port, docker_container, llm_model, navigation_model, planning_model, vision_model, speech_model, timeout_s). Le modèle doit être présent dans le conteneur (docker exec keraunos ollama pull qwen3:32b). Sans matériel, python3 main.py --simulate exécute toute la chaîne avec un LLM simulé. Le conteneur Ollama se pilote uniquement en console (docker exec -it keraunos sh) : aucune interface web n'est installée ni exposée, et le conteneur ne publie aucun port.
+
+### 6.1 Reconnaissance de photos : modèles de vision Ollama (conteneur keraunos)
+
+On utilise la bibliothèque OpenCV pour doter Zeus de capacités avancées de vision par ordinateur :
+
+- **Détection d'objets** : identifier des objets simples présents dans l'environnement domestique (meubles, bouteilles, portes), localiser des objets d'intérêt comme une tasse ou une télécommande.
+- **Reconnaissance faciale** : détecter et reconnaître des visages humains dans le champ de vision, saluer les occupants par leur prénom.
+
+OpenCV prend en charge des algorithmes avancés (segmentation d'images, transformations géométriques, détection de caractéristiques) et peut être intégré avec TensorFlow pour des applications avancées basées sur l'apprentissage profond. YOLO est un modèle de détection d'objets en temps réel basé sur des réseaux de neurones convolutifs, disponible via PyTorch ou Ultralytics.
+
+### 6.2 Transcription vocale : modèles Whisper Ollama (conteneur keraunos)
+
+DeepSpeech, développé par Mozilla, est un modèle open-source de reconnaissance vocale automatique basé sur l'apprentissage profond, conçu pour transcrire la parole en texte de manière efficace, même sur des systèmes avec des ressources limitées. Il fonctionne avec des fichiers audio au format WAV.
+
+Exemples de commandes vocales avancées :
+
+- "Va dans la cuisine" : le robot utilise sa cartographie pour identifier la position de la cuisine, planifie un chemin optimal et envoie les instructions à Hercule.
+- "Va à la borne de recharge" : le robot localise la borne dans sa carte, calcule une trajectoire et atteint la borne.
+- "Qu'est-ce qu'il y a devant ?" : Zeus analyse les données des capteurs et répond ("Il y a une chaise à 1 mètre").
+- "Quelle est ma position actuelle ?" : Zeus indique sa position relative sur la carte ("Je suis dans le salon, près de la table").
+- "Apprends cette pièce" : ajoute une nouvelle pièce à la cartographie.
+- "Suis-moi" : Zeus suit une personne grâce à la reconnaissance faciale.
+
+### 6.3 Modèles dédiés par tâche
+
+Au lieu d'un seul modèle généraliste, chaque tâche fait appel à son propre modèle Ollama, configuré dans la section `keraunos:` de `parameters.yaml` :
+
+| Tâche | Clé | Modèle par défaut | Rôle |
+|-------|-----|-------------------|------|
+| Navigation | `navigation_model` | `qwen3:8b` | Décisions de conduite en temps réel (`keraunos/brain.py`), modèle rapide pour une faible latence |
+| Planning | `planning_model` | `qwen3:14b` | Planification d'itinéraire sur la carte SLAM (`keraunos/itinerary.py`) |
+| Vision | `vision_model` | `qwen2.5vl` | Description de photos et mémoire des lieux (`keraunos/places.py`) |
+| Parole | `speech_model` | `hf.co/ggml-org/whisper-small` | Transcription audio (`keraunos/speech.py`, `SpeechTranscriber`) |
+| Général | `llm_model` | `qwen3:32b` | Modèle de repli pour toute autre tâche |
+
+Le client `keraunos/llm.py` (`OllamaLLM`) reçoit le dictionnaire `models` et expose `model_for(task)` pour résoudre le modèle d'une tâche, avec repli sur le modèle général. `main.py` construit ce dictionnaire à partir de `parameters.yaml` et le transmet au client ainsi qu'au cerveau de navigation. Chaque appel reste sans état : `ssh <user>@<host> "docker exec -i keraunos ollama run <modèle>"`. Les modèles se téléchargent une fois pour toutes sur Keraunos par `docker exec -i keraunos ollama pull <modèle>`.
+
+---
+
+## 7. Communication et stockage des données
+
+### Contrôle en ligne de commande : SSH
+
+SSH (Secure Shell) est le canal de communication principal entre Zeus et Hercule. Ce choix est motivé par la compatibilité, la rapidité et la simplicité du protocole. SSH permet la transmission des commandes de contrôle, le lancement de scripts, la surveillance en temps réel des données et l'automatisation des tâches.
+
+Configuration : IP de Zeus : [IP caviardée], mot de passe : [CAVIARDÉ]. Connexion depuis un terminal : `ssh <utilisateur>@[IP caviardée]`.
+
+### Contrôle graphique à distance : RealVNC
+
+RealVNC permet de prendre le contrôle de l'interface graphique de Zeus et Hercule à distance via une connexion réseau. Préinstallé sur Raspbian, il peut être activé rapidement. Il permet le développement à distance, la surveillance des capteurs et la configuration simplifiée. Activation via `sudo raspi-config`, adresse IP obtenue avec `hostname -I`.
+
+### Accès extérieur : tunnel SSH via Serveo
+
+Pour accéder à Zeus depuis l'extérieur du réseau local sans configurer le routeur, Serveo crée un tunnel SSH exposant un port local sur une URL publique. Exemple : `ssh -R 5901:localhost:5901 serveo.net`.
+
+### Stockage rapide des données : Redis
+
+Redis est une base de données en mémoire utilisée par Zeus pour stocker et accéder rapidement aux données des capteurs reçues d'Hercule. Redis stocke les données en mémoire RAM pour un accès extrêmement rapide et offre des structures de données flexibles (listes, ensembles, dictionnaires) pour organiser les données des capteurs et les états des moteurs.
+
+---
+
+## 8. Fonctionnalités avancées
+
+### 8.1 Navigation autonome
+
+La navigation autonome utilise les données des quatre capteurs ultrasoniques pour détecter les obstacles et ajuster la trajectoire. L'algorithme de navigation est basé sur l'évitement d'obstacles (changement de direction si un obstacle est détecté à proximité) et une cartographie basique (enregistrement des distances mesurées).
+
+### 8.2 Interaction vocale
+
+Zeus interagit avec les utilisateurs via la voix grâce à la bibliothèque Vosk (reconnaissance vocale hors ligne) pour la compréhension des commandes ("avance", "tourne à droite", "arrête-toi") et la synthèse vocale pour les réponses. Le pilotage vocal des déplacements est implémenté dans `audio/voice_commands.py` (voir 3.1.4) : grammaire Vosk restreinte aux ordres de mouvement, exécution locale sur les moteurs, refus de « avance » en cas d'obstacle détecté par le sonar frontal, confirmation vocale de l'ordre exécuté, et intégration dans `main.py` via l'option `--voice`.
+
+### 8.3 Reconnaissance visuelle
+
+La caméra Raspberry Pi permet à Zeus d'analyser son environnement visuellement via OpenCV pour la détection d'objets et la reconnaissance faciale. La détection d'objets sémantiques (personne, chaise, porte) est réalisée en local par YOLOv8 nano, directement sur le flux de la PiCam (voir 3.1.3).
+
+
+### 8.4 Recharge autonome
+
+Zeus intègre un système de recharge inductive sans fil, guidé par des balises Bluetooth vers sa borne de recharge.
+
+---
+
+## 9. Structure physique : impression 3D (LEGO) et boîte en bois découpée au laser
+
+La structure physique d'Zeus combine des composants LEGO, des pièces imprimées en 3D et une boîte en bois découpée au laser.
+
+### 9.1 Châssis LEGO
+
+Le châssis est construit à partir de plaques LEGO imprimées en 3D, offrant une grande flexibilité pour modifier et étendre la structure. Des supports imprimés en 3D complètent le système LEGO pour fixer les capteurs et la caméra.
+
+### 9.2 Impression 3D
+
+L'impression 3D est réalisée au FabLab de la ville, un espace collaboratif dédié à la fabrication numérique.
+
+Les modèles 3D sont conçus avec TinkerCAD, convertis en STL pour Cura, puis imprimés en PLA pour sa rigidité et sa légèreté. Pièces imprimées : châssis principal, supports pour capteurs ultrasoniques, bras articulé motorisé pour la PiCam, support de commande moteur, pièces adaptatives LEGO.
+
+### 9.3 Boîte en bois
+
+Une boîte en bois découpée au laser abrite Zeus. Conçue avec Boxes.py, en contreplaqué de 3 à 6 mm d'épaisseur, elle offre esthétique, protection et facilité de maintenance.
+
+---
+
+## 10. Tableau de bord : application web Dash
+
+L'application web Dash est utilisée pour créer un tableau de bord permettant de visualiser les données des capteurs en temps réel, de surveiller l'état du robot (batteries, état système) et de contrôler manuellement les mouvements du robot via l'interface web. Cette interface web est hébergée sur Zeus lui-même (paquet web/, tableau de bord Dash capteurs/sensor_dashboard.py qui trace les mesures des capteurs en temps réel, flux MJPEG de la PiCam via le paquet vision/) ; Keraunos n'expose aucune interface web et n'est joignable que par SSH.
+
+---
+
+## 11. Perspectives d'amélioration
+
+Sont déjà implémentées : l'exploration réactive (3.1.1), la couverture de zone par boustrophedon (3.1.2), le SLAM par grille d'occupation à partir du sonar à balayage (paquet `slam/`), l'odométrie sans encodeurs (`slam/pose.py`) avec sa calibration par ultrasons (`navigation/calibrate_odometry.py`), les modèles Ollama dédiés par tâche sur Keraunos (6.3), la détection sémantique d'obstacles par YOLOv8 nano (3.1.3) avec reconnaissance faciale déclenchée quand une personne est détectée et annonce vocale du nom reconnu (`vision/person_face_trigger.py` + `audio/speaker.py`), avec apprentissage des visages hors ligne (`vision/enroll_faces.py`, un sous-dossier par personne -> `face_encodings.pkl`), le pilotage vocal des déplacements par grammaire Vosk restreinte (`audio/voice_commands.py`, voir 3.1.4), une suite de tests unitaires avec mocks GPIO/I2C (dossier `tests/`, exécutable via `pytest` ou `python -m unittest`) et le linting `ruff` (configuration dans `pyproject.toml`, dépendances de développement dans `requirements-dev.txt`).
+
+Perspectives restantes :
+
+- **Navigation plus précise** : intégrer un capteur LIDAR pour une cartographie plus précise que le sonar à balayage.
+- **SLAM avancé** : corriger la dérive de l'odométrie par recalage sur la carte (loop closure), par exemple en ajoutant une centrale inertielle MPU6050 (accéléromètre et gyroscope) sur le bus I2C.
+- **Amélioration de la reconnaissance faciale** : entraîner un modèle plus performant.
+- **Apprentissage par renforcement** : permettre à Zeus d'apprendre de ses interactions avec l'environnement.
+- **Fusion des données des capteurs** : combiner les données des capteurs, les instructions de l'utilisateur et des règles prédéfinies pour améliorer la précision des détections.
+
+
+## Conclusion
+
+Le projet Zeus est une plateforme robotique ambitieuse qui démontre les possibilités offertes par les technologies open-source et les algorithmes modernes. En combinant une architecture modulaire, des fonctionnalités avancées et des choix techniques judicieux, Zeus représente une base solide pour l'exploration de concepts de robotique autonome et interactive.
+
+---
+
+## Photos du robot Zeus
+
+*[Image « Carte pilote moteur » retirée de la version publique (disponible dans le dépôt privé)]*
+
+*[Image « Microphone » retirée de la version publique (disponible dans le dépôt privé)]*
+
+*[Image « Capteur ultrasonique » retirée de la version publique (disponible dans le dépôt privé)]*
+
+</script>
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  var md = document.getElementById("md-source").textContent;
+  md = md.replace(/```mermaid\n([\s\S]*?)```/g, "<div class=\"mermaid\">$1</div>");
+  document.getElementById("rapport").innerHTML = marked.parse(md);
+  mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose" });
+  mermaid.run({ querySelector: ".mermaid" });
+});
+</script>
+</body>
+</html>
